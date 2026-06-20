@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摩托车改装俱乐部管理系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏍️ 摩托车改装俱乐部管理系统</h1>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="vehicles">车辆档案</button>
+            <button class="tab-btn" data-tab="orders">工单管理</button>
+            <button class="tab-btn" data-tab="stats">统计查询</button>
+        </nav>
+
+        <section id="vehicles" class="tab-content active">
+            <div class="panel">
+                <h2>添加车辆</h2>
+                <form id="vehicle-form" class="form-grid">
+                    <div class="form-group">
+                        <label>车牌</label>
+                        <input type="text" name="plate" required placeholder="如：京A12345">
+                    </div>
+                    <div class="form-group">
+                        <label>车型</label>
+                        <select name="model_type" required>
+                            <option value="">请选择</option>
+                            <option value="街车">街车</option>
+                            <option value="跑车">跑车</option>
+                            <option value="越野">越野</option>
+                            <option value="巡航">巡航</option>
+                            <option value="复古">复古</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>车主姓名</label>
+                        <input type="text" name="owner_name" required placeholder="车主姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>联系电话</label>
+                        <input type="text" name="owner_phone" required placeholder="手机号码">
+                    </div>
+                    <div class="form-group">
+                        <label>排量(cc)</label>
+                        <input type="number" name="displacement" min="1" required placeholder="正整数">
+                    </div>
+                    <div class="form-group form-actions">
+                        <button type="submit" class="btn btn-primary">添加车辆</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>车辆列表</h2>
+                <div class="table-wrap">
+                    <table id="vehicles-table">
+                        <thead>
+                            <tr>
+                                <th>车牌</th>
+                                <th>车型</th>
+                                <th>车主</th>
+                                <th>电话</th>
+                                <th>排量(cc)</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="orders" class="tab-content">
+            <div class="panel">
+                <h2>创建工单</h2>
+                <form id="order-form" class="form-grid">
+                    <div class="form-group">
+                        <label>车辆车牌</label>
+                        <select name="plate" id="order-plate" required>
+                            <option value="">请先添加车辆</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>改装类型</label>
+                        <select name="modify_type" required>
+                            <option value="">请选择</option>
+                            <option value="排气">排气</option>
+                            <option value="悬挂">悬挂</option>
+                            <option value="外观">外观</option>
+                            <option value="动力">动力</option>
+                            <option value="电气">电气</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>工单日期</label>
+                        <input type="date" name="order_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>费用(分)</label>
+                        <input type="number" name="cost" min="0" required placeholder="整数，单位：分">
+                    </div>
+                    <div class="form-group form-actions">
+                        <button type="submit" class="btn btn-primary">创建工单</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>工单列表</h2>
+                <div class="table-wrap">
+                    <table id="orders-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>车牌</th>
+                                <th>车主</th>
+                                <th>改装类型</th>
+                                <th>日期</th>
+                                <th>费用</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="stats" class="tab-content">
+            <div class="panel">
+                <h2>车主工单查询</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>车主姓名</label>
+                        <input type="text" id="owner-query" placeholder="输入车主姓名">
+                    </div>
+                    <div class="form-group form-actions">
+                        <button type="button" id="owner-query-btn" class="btn btn-primary">查询</button>
+                    </div>
+                </div>
+                <div id="owner-result" class="owner-result hidden">
+                    <h3>累计改装费用：<span id="owner-total">0</span> 分</h3>
+                    <div class="table-wrap">
+                        <table id="owner-orders-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>车牌</th>
+                                    <th>车型</th>
+                                    <th>改装类型</th>
+                                    <th>日期</th>
+                                    <th>费用</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>本月改装类型统计</h2>
+                <div class="table-wrap">
+                    <table id="monthly-stats-table">
+                        <thead>
+                            <tr>
+                                <th>改装类型</th>
+                                <th>工单数</th>
+                                <th>总收入(分)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <button type="button" id="refresh-stats-btn" class="btn btn-secondary">刷新统计</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">编辑</h3>
+            <div id="modal-body"></div>
+            <div class="modal-actions">
+                <button type="button" id="modal-cancel" class="btn btn-secondary">取消</button>
+                <button type="button" id="modal-confirm" class="btn btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
