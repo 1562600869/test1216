@@ -6,6 +6,17 @@ from datetime import datetime
 
 DB_NAME = 'mc_shop.db'
 
+MODEL_TYPES = ('街车', '跑车', '越野', '巡航', '复古')
+MODIFY_TYPES = ('排气', '悬挂', '外观', '动力', '电气')
+STATUS_FLOW = ('待施工', '施工中', '已完成')
+ALL_STATUSES = STATUS_FLOW + ('已取消',)
+CANCELLABLE_STATUS = '待施工'
+
+def validate_enum(value, valid_values, field_name):
+    if value not in valid_values:
+        return f'{field_name}必须是以下值之一：{"、".join(valid_values)}'
+    return None
+
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -135,6 +146,10 @@ class MCShopHandler(BaseHTTPRequestHandler):
                 if not isinstance(displacement, int) or displacement <= 0:
                     self._error_response('排量必须是正整数')
                     return
+                enum_err = validate_enum(model_type, MODEL_TYPES, '车型')
+                if enum_err:
+                    self._error_response(enum_err)
+                    return
 
                 conn = get_db()
                 try:
@@ -160,6 +175,10 @@ class MCShopHandler(BaseHTTPRequestHandler):
                     return
                 if not isinstance(cost, int) or cost < 0:
                     self._error_response('费用必须是非负整数')
+                    return
+                enum_err = validate_enum(modify_type, MODIFY_TYPES, '改装类型')
+                if enum_err:
+                    self._error_response(enum_err)
                     return
 
                 conn = get_db()
@@ -209,21 +228,25 @@ class MCShopHandler(BaseHTTPRequestHandler):
 
                 action = data.get('action', '')
                 if action == 'advance':
-                    status_flow = {'待施工': '施工中', '施工中': '已完成'}
-                    if order['status'] not in status_flow:
+                    if order['status'] not in STATUS_FLOW:
                         conn.close()
                         self._error_response('当前状态无法推进')
                         return
-                    new_status = status_flow[order['status']]
+                    current_idx = STATUS_FLOW.index(order['status'])
+                    if current_idx >= len(STATUS_FLOW) - 1:
+                        conn.close()
+                        self._error_response('当前状态已是最终状态，无法推进')
+                        return
+                    new_status = STATUS_FLOW[current_idx + 1]
                     conn.execute('UPDATE orders SET status = ? WHERE id = ?', (new_status, int(order_id)))
                     conn.commit()
                     conn.close()
                     self._json_response({'message': f'状态已更新为{new_status}'})
 
                 elif action == 'cancel':
-                    if order['status'] != '待施工':
+                    if order['status'] != CANCELLABLE_STATUS:
                         conn.close()
-                        self._error_response('只有待施工状态才能取消')
+                        self._error_response(f'只有「{CANCELLABLE_STATUS}」状态才能取消工单')
                         return
                     conn.execute('UPDATE orders SET status = ? WHERE id = ?', ('已取消', int(order_id)))
                     conn.commit()
@@ -239,6 +262,11 @@ class MCShopHandler(BaseHTTPRequestHandler):
                     if not isinstance(cost, int) or cost < 0:
                         conn.close()
                         self._error_response('费用必须是非负整数')
+                        return
+                    enum_err = validate_enum(modify_type, MODIFY_TYPES, '改装类型')
+                    if enum_err:
+                        conn.close()
+                        self._error_response(enum_err)
                         return
 
                     v = conn.execute('SELECT plate FROM vehicles WHERE plate = ?', (plate,)).fetchone()
@@ -259,7 +287,7 @@ class MCShopHandler(BaseHTTPRequestHandler):
                     self._error_response('无效的操作')
 
             elif path.startswith('/api/vehicles/'):
-                plate = path.split('/')[-1]
+                plate = urllib.parse.unquote(path.split('/')[-1])
                 if not plate:
                     self._error_response('无效的车牌')
                     return
@@ -279,6 +307,11 @@ class MCShopHandler(BaseHTTPRequestHandler):
                 if not isinstance(displacement, int) or displacement <= 0:
                     conn.close()
                     self._error_response('排量必须是正整数')
+                    return
+                enum_err = validate_enum(model_type, MODEL_TYPES, '车型')
+                if enum_err:
+                    conn.close()
+                    self._error_response(enum_err)
                     return
 
                 conn.execute('''UPDATE vehicles SET model_type = ?, owner_name = ?, owner_phone = ?, displacement = ?
